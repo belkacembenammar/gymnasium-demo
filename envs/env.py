@@ -5,7 +5,7 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv
 
 # Définir l'environnement
-class PIMAccessControlEnv(gym.Env):
+class PIMEnv(gym.Env):
     def __init__(self):
         super().__init__()
 
@@ -62,7 +62,7 @@ class PIMAccessControlEnv(gym.Env):
 
 
 # Créer l'environnement
-env = PIMAccessControlEnv()
+env = PIMEnv()
 
 # Vectoriser l'environnement
 env = DummyVecEnv([lambda: env])
@@ -71,14 +71,14 @@ env = DummyVecEnv([lambda: env])
 model = PPO("MlpPolicy", env, verbose=1)
 
 # Entraîner le modèle
-model.learn(total_timesteps=100000)  # Nombre d'étapes à entraîner, tu peux augmenter ce nombre
+model.learn(total_timesteps=100000)  # Nombre d'étapes à entraîner
 
 # Sauvegarder le modèle entraîné
 model.save("models/pim_pam_poum_model")
 
 # Tester le modèle entraîné
 obs = env.reset()
-for _ in range(1000):  # Tester sur 1000 étapes
+for _ in range(100000):  # Tester sur 100000 étapes
     action, _states = model.predict(obs)
     obs, rewards, dones, info = env.step(action)
     env.render()  # Affiche les résultats
