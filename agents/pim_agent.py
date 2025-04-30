@@ -1,5 +1,5 @@
 from stable_baselines3 import PPO
-from pim_env import PIMEnv
+from pim_env import PimEnv
 
 # Create a PIM Access Control Agent class
 class PimAgent:
