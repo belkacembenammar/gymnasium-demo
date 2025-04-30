@@ -29,17 +29,19 @@ class PimEnv(gym.Env):
         return np.array([self.ticket_valid, self.developer_in_squad, self.request_pending], dtype=np.float32), {}
 
     def step(self, action):
-        if action == 0:  # Accept
+        if action == 1:  # Accept
             if self.ticket_valid == 1 and self.developer_in_squad == 1 and self.request_pending == 0:
-                reward = 100 # Correct to accept valid requests
-                self.request_pending = 1
+                reward = 200 # Correct to accept valid requests
             else:
-                reward = -10 # Penalty for accepting invalid requests or when there's already a pending request
+                reward = -1500 # Penalty for accepting invalid requests or when there's already a pending request
         else:  # Reject
             if self.ticket_valid == 1 and self.developer_in_squad == 1 and self.request_pending == 0:
-                reward = -100 # Penalty for rejecting a valid request
+                reward = 200 # Penalty for rejecting a valid request
             else:
-                reward = 50  # Correct to reject invalid requests or when there's already a pending request
+                reward = -2000  # Correct to reject invalid requests or when there's already a pending request
+        
+        self.done = False
+        return np.array([self.ticket_valid, self.developer_in_squad, self.request_pending], dtype=np.float32), reward, self.done, False, {}
         
         self.done = False
         return np.array([self.ticket_valid, self.developer_in_squad, self.request_pending], dtype=np.float32), reward, self.done, False, {}
