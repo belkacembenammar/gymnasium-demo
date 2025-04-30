@@ -74,7 +74,7 @@ model = PPO("MlpPolicy", env, verbose=1)
 model.learn(total_timesteps=100000)  # Nombre d'étapes à entraîner, tu peux augmenter ce nombre
 
 # Sauvegarder le modèle entraîné
-model.save("pim_pam_poum_model")
+model.save("models/pim_pam_poum_model")
 
 # Tester le modèle entraîné
 obs = env.reset()
