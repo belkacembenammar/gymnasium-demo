@@ -1,32 +1,72 @@
+import gymnasium as gym
+from gymnasium import spaces
+import numpy as np
+from stable_baselines3 import PPO
+from stable_baselines3.common.vec_env import DummyVecEnv
+import random
+import os
+
+from pim_agent import PimAgent
+from pim_env import PimEnv
+
+
+
 # Example usage
-from pim_agent import PIMAgent
-
-
 if __name__ == "__main__":
-    # Create the agent
-    agent = PIMAgent()
+    # Create models directory if it doesn't exist
+    if not os.path.exists("models"):
+        os.makedirs("models")
     
-    print("=== PIM Access Control Agent Demo ===\n")
+    model_path = "models/pim_pam_poum_model"
+    
+    # Ask if user wants to train a new model or use existing one
+    train_new = input("Do you want to train a new model? (y/n): ").lower() == 'y'
+    
+    if train_new:
+        print("\n=== Training New PIM Access Control Model ===")
+        
+        # Create and vectorize the environment for training
+        env = PimEnv()
+        vec_env = DummyVecEnv([lambda: env])
+        
+        # Ask for training parameters
+        try:
+            timesteps = int(input("Enter training timesteps (default: 100000): ") or "100000")
+        except ValueError:
+            timesteps = 100000
+            print(f"Invalid input. Using default: {timesteps}")
+        
+        # Create and train the model
+        model = PPO("MlpPolicy", vec_env, verbose=1)
+        print(f"\nTraining for {timesteps} timesteps...")
+        model.learn(total_timesteps=timesteps)
+        
+        # Save the trained model
+        model.save(model_path)
+        print(f"Model saved to {model_path}")
+    
+    # Create the agent with the model (either existing or newly trained)
+    print("\n=== Creating PIM Access Control Agent ===")
+    agent = PimAgent(model_path=model_path)
+    
+    print("\n=== PIM Access Control Agent Demo ===")
     
     # Test with various scenarios
     test_cases = [
         # Typical valid request (should be ACCEPT)
-        {"ticket_valid": 1, "developer_squad": "PAS", "risk_level": 0.2, "requests_today": 2},
+        {"ticket_valid": 1, "developer_squad": "PAS", "request_pending": 0},
         
         # Invalid ticket (should be REJECT)
-        {"ticket_valid": 0, "developer_squad": "PAS", "risk_level": 0.2, "requests_today": 2},
+        {"ticket_valid": 0, "developer_squad": "PAS", "request_pending": 0},
         
         # Unauthorized squad (should be REJECT)
-        {"ticket_valid": 1, "developer_squad": "EXT", "risk_level": 0.2, "requests_today": 2},
+        {"ticket_valid": 1, "developer_squad": "EXT", "request_pending": 0},
         
-        # High risk (should be REJECT)
-        {"ticket_valid": 1, "developer_squad": "PAS", "risk_level": 0.8, "requests_today": 2},
+        # Already has pending request (should be REJECT)
+        {"ticket_valid": 1, "developer_squad": "PAS", "request_pending": 1},
         
-        # Too many requests (should be REJECT)
-        {"ticket_valid": 1, "developer_squad": "PAS", "risk_level": 0.2, "requests_today": 5},
-        
-        # Edge case (borderline risk)
-        {"ticket_valid": 1, "developer_squad": "BIL", "risk_level": 0.45, "requests_today": 3},
+        # Edge case (valid but unusual squad)
+        {"ticket_valid": 1, "developer_squad": "COR", "request_pending": 0},
     ]
     
     # Process each test case
@@ -38,8 +78,7 @@ if __name__ == "__main__":
         expected = "ACCEPT" if (
             case["ticket_valid"] == 1 and 
             case["developer_squad"] in ["PAS", "CHG", "BIL", "PLA", "COR"] and
-            case["risk_level"] < 0.5 and
-            case["requests_today"] < 5
+            case["request_pending"] == 0
         ) else "REJECT"
         
         if decision == expected:
@@ -59,10 +98,9 @@ if __name__ == "__main__":
             squad_list = ", ".join(agent.env.squads)
             developer_squad = input(f"Developer squad ({squad_list} or other): ")
             
-            risk_level = float(input("Risk level (0.0-1.0): "))
-            requests_today = int(input("Previous requests today (0-5): "))
+            request_pending = int(input("Request already pending (1=Yes, 0=No): "))
             
-            decision, action = agent.process_request(ticket_valid, developer_squad, risk_level, requests_today)
+            decision, action = agent.process_request(ticket_valid, developer_squad, request_pending)
             
         except KeyboardInterrupt:
             print("\nExiting interactive mode.")
