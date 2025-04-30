@@ -6,10 +6,8 @@ from stable_baselines3.common.vec_env import DummyVecEnv
 import random
 import os
 
-from pim_agent import PimAgent
-from pim_env import PimEnv
-
-
+from agents.pim_agent import PimAgent
+from envs.pim_env import PimEnv
 
 # Example usage
 if __name__ == "__main__":
